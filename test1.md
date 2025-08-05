@@ -191,3 +191,51 @@ finally:
     sock.close()
 
 ```
+
+
+```
+Microsoft Windows [Version 10.0.26100.4652]
+(c) Microsoft Corporation. All rights reserved.
+
+C:\Users\palab\OneDrive\Desktop\localization-test\ui>py server.py
+✅ Listening for Anchor2 RSSI packets on UDP port 5010...
+
+Traceback (most recent call last):
+  File "C:\Users\palab\OneDrive\Desktop\localization-test\ui\server.py", line 25, in <module>
+    print(f"[A2] RSSI: {rssi} dBm | Distance: {distance:.2f} m | Payload: {payload}")
+                                              ^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to NoneType.__format__
+
+C:\Users\palab\OneDrive\Desktop\localization-test\ui>py server.py
+✅ Listening for Anchor2 RSSI packets on UDP port 5010...
+
+[A2] RSSI: -51 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 64}
+[A2] RSSI: -51 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 65}
+[A2] RSSI: -51 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 66}
+[A2] RSSI: -54 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 67}
+[A2] RSSI: -60 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 68}
+[A2] RSSI: -62 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 69}
+[A2] RSSI: -62 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 70}
+[A2] RSSI: -60 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 71}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 72}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 73}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 74}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 75}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 76}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 77}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 78}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 79}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 80}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 81}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 82}
+[A2] RSSI: -60 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 83}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 84}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 85}
+[A2] RSSI: -80 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 86}
+[A2] RSSI: -70 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 87}
+[A2] RSSI: -71 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 88}
+[A2] RSSI: -60 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 89}
+[A2] RSSI: -61 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 90}
+[A2] RSSI: -67 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 91}
+
+```

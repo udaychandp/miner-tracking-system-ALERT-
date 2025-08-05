@@ -161,7 +161,7 @@ UDP_PORT = 5010             # Must match Anchor2's `serverPort`
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, UDP_PORT))
 
-print(f"✅ Listening for RSSI packets on UDP port {UDP_PORT}...\n")
+print(f"Listening for RSSI packets on UDP port {UDP_PORT}...\n")
 
 try:
     while True:
@@ -180,12 +180,12 @@ try:
                 print(f"[{anchor}] RSSI: {rssi} dBm | Distance: N/A | Payload: {payload}")
 
         except json.JSONDecodeError:
-            print("⚠️  Invalid JSON received:", data.decode())
+            print("Invalid JSON received:", data.decode())
         except Exception as e:
-            print("⚠️  Error:", e)
+            print("Error:", e)
 
 except KeyboardInterrupt:
-    print("\n🛑 Server stopped by user.")
+    print("\nServer stopped by user.")
 
 finally:
     sock.close()

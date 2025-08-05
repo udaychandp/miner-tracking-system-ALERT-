@@ -1,5 +1,5 @@
 
-''' c
+``` c
 // 78:42:1C:6D:27:C0  anchor2 mac address
 // {0x78, 0x42, 0x1C, 0x6D, 0x27, 0xC0}
 
@@ -62,4 +62,5 @@ void loop() {
     digitalWrite(LED_PIN, LOW);  // LED OFF
   }
 }
-'''
+
+```

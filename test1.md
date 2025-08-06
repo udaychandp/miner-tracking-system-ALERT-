@@ -239,3 +239,306 @@ C:\Users\palab\OneDrive\Desktop\localization-test\ui>py server.py
 [A2] RSSI: -67 dBm | Distance: N/A | Payload: {'tag_id': 'TAG1', 'seq': 91}
 
 ```
+``` 
+import socket
+import json
+from flask import Flask, Response
+from threading import Thread
+import collections
+import numpy as np
+
+# UDP Configuration
+UDP_IP = "0.0.0.0"
+UDP_PORT = 5010
+
+# Flask App
+app = Flask(__name__)
+
+# Store distances for both anchors
+distances = {"A1": 0.0, "A2": 0.0}
+
+# Moving average filter setup
+WINDOW_SIZE = 5
+distance_queues = {"A1": collections.deque(maxlen=WINDOW_SIZE), "A2": collections.deque(maxlen=WINDOW_SIZE)}
+
+# RSSI to Distance Parameters
+MEASURED_POWER = -50  # RSSI at 1 meter (calibrate based on your device)
+PATH_LOSS_EXPONENT = 3  # Typical for indoor/underground (adjust as needed)
+
+def rssi_to_distance(rssi):
+    if rssi is None:
+        return 0.0
+    return 10 ** ((MEASURED_POWER - rssi) / (10 * PATH_LOSS_EXPONENT))
+
+# HTML Content
+index_html = """
+<!DOCTYPE html> 
+<html>
+<head>
+    <title>Localization of Underground Mining</title>
+    <style>
+        canvas { border: 1px solid black; background-color: #f4f4f4; }
+        .info { margin: 10px; font-size: 20px; }
+    </style>
+    <script>
+        let distance1 = 0; // For Tag1
+        let distance2 = 0; // For Tag2
+
+        function updateDistances() {
+            fetch("/distance1")
+                .then(response => response.text())
+                .then(data => {
+                    distance1 = parseFloat(data);
+                    drawTags();
+                });
+            fetch("/distance2")
+                .then(response => response.text())
+                .then(data => {
+                    distance2 = parseFloat(data);
+                    drawTags();
+                });
+        }
+
+        function drawPillars(ctx) {
+            ctx.fillStyle = "#000000";
+            const pillarWidth = 80;
+            const pillarHeight = 80;
+            const spacing = 150;
+
+            for (let i = 0; i < 4; i++) {
+                let y = 30 + i * spacing;
+                ctx.fillRect(30, y, pillarWidth, pillarHeight);
+                ctx.fillRect(180, y, pillarWidth, pillarHeight);
+                ctx.fillRect(330, y, pillarWidth, pillarHeight);
+                ctx.fillRect(480, y, pillarWidth, pillarHeight);
+            }
+        }
+
+        function drawTags() {
+            const canvas = document.getElementById("tracker");
+            const ctx = canvas.getContext("2d");
+
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw static underground pillars
+            drawPillars(ctx);
+
+            // Draw Anchor1 point (red circle) at x=100, y=150
+            ctx.fillStyle = "red";
+            ctx.beginPath();
+            ctx.arc(100, 150, 10, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Draw Anchor2 point (green circle) at x=500, y=450
+            ctx.fillStyle = "green";
+            ctx.beginPath();
+            ctx.arc(500, 450, 15, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Calculate Tag1 (miner) position using weighted average between A1 and A2
+            let totalDistance = distance1 + distance2;
+            let x1 = totalDistance > 0 ? (distance1 * 500 + distance2 * 100) / totalDistance : 100;
+            let y1 = totalDistance > 0 ? (distance1 * 450 + distance2 * 150) / totalDistance : 150;
+
+            // Draw Tag1 (miner)
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "blue";
+            ctx.fillStyle = "blue";
+
+            // Helmet
+            ctx.beginPath();
+            ctx.arc(0, -15, 8, Math.PI, 0);
+            ctx.fill();
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(0, -10, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = "lightgray";
+            ctx.fill();
+            ctx.stroke();
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(0, -5);
+            ctx.lineTo(0, 15);
+            ctx.stroke();
+
+            // Arms
+            ctx.beginPath();
+            ctx.moveTo(-5, 0);
+            ctx.lineTo(5, 0);
+            ctx.stroke();
+
+            // Pickaxe handle
+            ctx.beginPath();
+            ctx.moveTo(5, 0);
+            ctx.lineTo(15, -10);
+            ctx.strokeStyle = "brown";
+            ctx.stroke();
+
+            // Pickaxe head
+            ctx.beginPath();
+            ctx.moveTo(12, -13);
+            ctx.lineTo(18, -7);
+            ctx.strokeStyle = "gray";
+            ctx.stroke();
+
+            // Legs
+            ctx.beginPath();
+            ctx.moveTo(0, 15);
+            ctx.lineTo(-7, 25);
+            ctx.moveTo(0, 15);
+            ctx.lineTo(7, 25);
+            ctx.strokeStyle = "blue";
+            ctx.stroke();
+            ctx.restore();
+
+            // Calculate Tag2 (miner) position using weighted average between A1 and A2
+            let x2 = totalDistance > 0 ? (distance1 * 500 + distance2 * 100) / totalDistance : 500;
+            let y2 = totalDistance > 0 ? (distance1 * 450 + distance2 * 150) / totalDistance : 450;
+
+            // Draw Tag2 (miner) with different color
+            ctx.save();
+            ctx.translate(x2, y2);
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "purple";
+            ctx.fillStyle = "purple";
+
+            // Helmet
+            ctx.beginPath();
+            ctx.arc(0, -15, 8, Math.PI, 0);
+            ctx.fill();
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(0, -10, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = "lightgray";
+            ctx.fill();
+            ctx.stroke();
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(0, -5);
+            ctx.lineTo(0, 15);
+            ctx.stroke();
+
+            // Arms
+            ctx.beginPath();
+            ctx.moveTo(-5, 0);
+            ctx.lineTo(5, 0);
+            ctx.stroke();
+
+            // Pickaxe handle
+            ctx.beginPath();
+            ctx.moveTo(5, 0);
+            ctx.lineTo(15, -10);
+            ctx.strokeStyle = "brown";
+            ctx.stroke();
+
+            // Pickaxe head
+            ctx.beginPath();
+            ctx.moveTo(12, -13);
+            ctx.lineTo(18, -7);
+            ctx.strokeStyle = "gray";
+            ctx.stroke();
+
+            // Legs
+            ctx.beginPath();
+            ctx.moveTo(0, 15);
+            ctx.lineTo(-7, 25);
+            ctx.moveTo(0, 15);
+            ctx.lineTo(7, 25);
+            ctx.strokeStyle = "purple";
+            ctx.stroke();
+            ctx.restore();
+
+            // Show distances text
+            document.getElementById("distance1").innerText = "Tag1 Distance: " + distance1 + " meters";
+            document.getElementById("distance2").innerText = "Tag2 Distance: " + distance2 + " meters";
+        }
+
+        setInterval(updateDistances, 500);
+    </script>
+</head>
+<body>
+    <h2>Localization for Underground Mining</h2>
+    <p class="info" id="distance1">Tag1 Distance: 0.0 meters</p>
+    <p class="info" id="distance2">Tag2 Distance: 0.0 meters</p>
+    <canvas id="tracker" width="600" height="600"></canvas>
+</body>
+</html>
+"""
+
+# Flask Routes
+@app.route('/')
+def index():
+    return index_html
+
+@app.route('/distance1')
+def get_distance1():
+    return str(distances["A1"])
+
+@app.route('/distance2')
+def get_distance2():
+    return str(distances["A2"])
+
+# Moving Average Filter
+def apply_moving_average(anchor, distance):
+    distance_queues[anchor].append(distance)
+    return np.mean(list(distance_queues[anchor]))
+
+# UDP Listener
+def udp_listener():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((UDP_IP, UDP_PORT))
+    print(f"Listening for RSSI packets on UDP port {UDP_PORT}...\n")
+    
+    try:
+        while True:
+            data, _ = sock.recvfrom(1024)
+            try:
+                # Decode with error handling to ignore invalid bytes
+                msg = data.decode('utf-8', errors='ignore')
+                parsed = json.loads(msg)
+                anchor = parsed.get("anchor")
+                rssi = parsed.get("rssi")
+                distance = parsed.get("distance")
+                payload = parsed.get("payload", "")
+
+                if anchor in ["A1", "A2"]:
+                    if distance is None or distance == "N/A":
+                        # Convert RSSI to distance if not provided
+                        calculated_distance = rssi_to_distance(rssi)
+                    else:
+                        calculated_distance = float(distance)
+                    
+                    # Apply moving average filter
+                    filtered_distance = apply_moving_average(anchor, calculated_distance)
+                    distances[anchor] = filtered_distance
+                    print(f"[{anchor}] RSSI: {rssi} dBm | Distance: {filtered_distance:.2f} m | Payload: {payload}")
+                else:
+                    print(f"Ignored packet from non-A1/A2 anchor: {anchor}")
+
+            except json.JSONDecodeError:
+                print("Invalid JSON received:", data.hex())  # Log raw data in hex for debugging
+            except UnicodeDecodeError as e:
+                print(f"Decoding error: {e}. Raw data: {data.hex()}")  # Log raw data on decode failure
+
+    except KeyboardInterrupt:
+        print("\nUDP listener stopped manually.")
+    finally:
+        sock.close()
+
+# Run Flask and UDP listener in separate threads
+if __name__ == '__main__':
+    # Start UDP listener in a separate thread
+    udp_thread = Thread(target=udp_listener)
+    udp_thread.daemon = True
+    udp_thread.start()
+    
+    # Start Flask server
+    app.run(host='0.0.0.0', port=5000)
+```
